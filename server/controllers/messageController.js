@@ -38,3 +38,34 @@ module.exports.addMessage = async (req, res, next) => {
     next(ex);
   }
 };
+//New Feature
+module.exports.deleteMessage = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    
+    // Find the message by its ID and remove it
+    const deletedMessage = await Messages.findByIdAndRemove(messageId);
+    
+    if (!deletedMessage) {
+      return res.json({ msg: 'Message not found', status: false });
+    }
+    
+    return res.json({ msg: 'Message deleted successfully', status: true });
+  } catch (ex) {
+    next(ex);
+  }
+};
+module.exports.getMessagesWithIds = async (req, res, next) => {
+  try {
+    const messagesWithIds = await Messages.find({}, { _id: 1, message: 1 });
+    
+    const formattedMessages = messagesWithIds.map((message) => ({
+      messageId: message._id,
+      text: message.message.text,
+    }));
+    
+    res.json(formattedMessages);
+  } catch (ex) {
+    next(ex);
+  }
+};

@@ -13,6 +13,7 @@ app.use(express.json());
 // Connect to MongoDB
 connectToMongoDB();
 
+
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 

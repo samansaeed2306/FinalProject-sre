@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import ChatInput from "./ChatInput";
 import Logout from "./Logout";
+import Message from "./Messages";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
-import { sendMessageRoute, recieveMessageRoute } from "../utils/APIRoutes";
+import { sendMessageRoute, recieveMessageRoute, deleteMessageRoute } from "../utils/APIRoutes";
 
 export default function ChatContainer({ currentChat, socket }) {
   const [messages, setMessages] = useState([]);
@@ -69,6 +70,28 @@ export default function ChatContainer({ currentChat, socket }) {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  //New Feature
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      console.log('deleteMessageRoute:', deleteMessageRoute);
+    const url = `${deleteMessageRoute.replace(':messageId', messageId)}`;
+    console.log('Constructed URL:', url);
+    // Send a request to delete the message
+    const response = await axios.delete(url);
+      
+      if (response.data.status) {
+        // If the message is successfully deleted, update the state
+        setMessages((prevMessages) => prevMessages.filter((msg) => msg._id !== messageId));
+      } else {
+        // Handle the case where the message deletion failed
+        console.error("Failed to delete the message");
+      }
+    } catch (error) {
+      // Handle errors here
+      console.error("Error deleting the message", error);
+    }
+  };
+
   return (
     <Container>
       <div className="chat-header">
@@ -85,27 +108,22 @@ export default function ChatContainer({ currentChat, socket }) {
         </div>
         <Logout />
       </div>
-      <div className="chat-messages">
-        {messages.map((message) => {
-          return (
-            <div ref={scrollRef} key={uuidv4()}>
-              <div
-                className={`message ${
-                  message.fromSelf ? "sended" : "recieved"
-                }`}
-              >
-                <div className="content ">
-                  <p>{message.message}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+         <div className="chat-messages">
+         {messages.map((message) => (
+           <Message
+             key={uuidv4()}
+             message={message}
+             onDelete={() => handleDeleteMessage(message._id)}
+           />
+         ))}
+       
       </div>
+  
       <ChatInput handleSendMsg={handleSendMsg} />
     </Container>
   );
-}
+        }  
+
 
 const Container = styled.div`
   display: grid;
@@ -179,3 +197,7 @@ const Container = styled.div`
     }
   }
 `;
+
+
+
+

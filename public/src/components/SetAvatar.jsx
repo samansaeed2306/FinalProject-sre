@@ -21,24 +21,42 @@ export default function SetAvatar() {
     theme: "dark",
   };
 
-  useEffect(async () => {
-    if (!localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY))
-      navigate("/login");
+  useEffect(() => {
+    checkLoginStatus();
   }, []);
 
+  const checkLoginStatus = async () => {
+    try {
+      const localStorageKey = process.env.REACT_APP_LOCALHOST_KEY;
+      if (!localStorage.getItem(localStorageKey)) {
+        throw new Error("User not logged in");
+      }
+    } catch (error) {
+      console.error("Error checking login status:", error);
+      navigate("/login");
+    }
+  };
+
   const setProfilePicture = async () => {
-    if (selectedAvatar === undefined) {
-      toast.error("Please select an avatar", toastOptions);
-    } else {
-      const user = await JSON.parse(
-        localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
-      );
+    try {
+      if (selectedAvatar === undefined) {
+        toast.error("Please select an avatar", toastOptions);
+      } else {
+        const user = await JSON.parse(
+          localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+        );
 
-      const { data } = await axios.post(`${setAvatarRoute}/${user._id}`, {
-        image: avatars[selectedAvatar],
-      });
+        const { data } = await axios.post(
+          `${setAvatarRoute}/${user._id}`,
+          {
+            image: avatars[selectedAvatar],
+          }
+        );
 
-      if (data.isSet) {
+        if (!data || !data.isSet) {
+          throw new Error("Error setting avatar");
+        }
+
         user.isAvatarImageSet = true;
         user.avatarImage = data.image;
         localStorage.setItem(
@@ -46,24 +64,36 @@ export default function SetAvatar() {
           JSON.stringify(user)
         );
         navigate("/");
-      } else {
-        toast.error("Error setting avatar. Please try again.", toastOptions);
       }
+    } catch (error) {
+      console.error("Error setting profile picture:", error);
+      toast.error("Error setting avatar. Please try again.", toastOptions);
     }
   };
 
-  useEffect(async () => {
-    const data = [];
-    for (let i = 0; i < 4; i++) {
-      const image = await axios.get(
-        `${api}/${Math.round(Math.random() * 1000)}`
-      );
-      const buffer = new Buffer(image.data);
-      data.push(buffer.toString("base64"));
-    }
-    setAvatars(data);
-    setIsLoading(false);
+  useEffect(() => {
+    fetchAvatars();
   }, []);
+
+  const fetchAvatars = async () => {
+    try {
+      const data = [];
+      for (let i = 0; i < 4; i++) {
+        const image = await axios.get(
+          `${api}/${Math.round(Math.random() * 1000)}`
+        );
+        const buffer = new Buffer(image.data);
+        data.push(buffer.toString("base64"));
+      }
+      setAvatars(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching avatars:", error);
+      toast.error("Error fetching avatars. Please try again.", toastOptions);
+    }
+  };
+
+
   return (
     <>
       {isLoading ? (
@@ -158,3 +188,7 @@ const Container = styled.div`
     }
   }
 `;
+
+
+
+
